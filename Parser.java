@@ -1,11 +1,7 @@
 package cop5556sp17;
 
-import cop5556sp17.AST.*;
 import cop5556sp17.Scanner.Kind;
 import static cop5556sp17.Scanner.Kind.*;
-
-import java.util.ArrayList;
-
 import cop5556sp17.Scanner.Token;
 
 public class Parser {
@@ -58,83 +54,66 @@ public class Parser {
 	 * 
 	 * @throws SyntaxException
 	 */
-	ASTNode parse() throws SyntaxException {
-		ASTNode ast = program();
+	void parse() throws SyntaxException {
+		program();
 		matchEOF();
-		return ast;
+		return;
 	}
 
-	Expression expression() throws SyntaxException {
+	void expression() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Expression e1 = null;
-		Expression e2 = null;
-		e1 = term();
-		while (t.isKind(REL_OP)){
-			Token op = consume();
-			e2 = term();
-			e1 = new BinaryExpression(first,e1,op,e2);
+		term();
+		while (isKind(REL_OP)){
+			consume();
+			term();
 		}
-		return e1;
 	}
 
-	Expression term() throws SyntaxException {
+	void term() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Expression e1 = null;
-		Expression e2 = null;
-		e1 = elem();
-		while (t.isKind(WEAK_OP)){
-			Token op = consume();
-			e2 = elem();
-			e1 = new BinaryExpression(first,e1,op,e2);
+		elem();
+		while (isKind(WEAK_OP)){
+			consume();
+			elem();
 		}
-		return e1;
 		//throw new UnimplementedFeatureException();
 	}
 
-	Expression elem() throws SyntaxException {
+	void elem() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Expression e1 = null;
-		Expression e2 = null;
-		e1 = factor();
-		while (t.isKind(STRONG_OP)){
-			Token op = consume();
-			e2 = factor();
-			e1 = new BinaryExpression(first,e1,op,e2);
+		factor();
+		while (isKind(STRONG_OP)){
+			consume();
+			factor();
 		}
-		return e1;
 		//throw new UnimplementedFeatureException();
 		
 	}
 
-	Expression factor() throws SyntaxException {
-		Token first = t;
-		Expression e1 = null;
+	void factor() throws SyntaxException {
 		Kind kind = t.kind;
 		switch (kind) {
 		case IDENT: {
-			e1 = new IdentExpression(consume());
+			consume();
 		}
 			break;
 		case INT_LIT: {
-			e1 = new IntLitExpression(consume());
+			consume();
 		}
 			break;
 		case KW_TRUE:
 		case KW_FALSE: {
-			e1 = new BooleanLitExpression(consume());
+			consume();
 		}
 			break;
 		case KW_SCREENWIDTH:
 		case KW_SCREENHEIGHT: {
-			e1 = new ConstantExpression(consume());
+			consume();
 		}
 			break;
 		case LPAREN: {
 			consume();
-			e1 = expression();
+			expression();
 			match(RPAREN);
 		}
 			break;
@@ -142,50 +121,37 @@ public class Parser {
 			//you will want to provide a more useful error message
 			throw new SyntaxException("illegal factor");
 		}
-		return e1;
 	}
 
-	Block block() throws SyntaxException {
+	void block() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Block e = null;
-		ArrayList<Dec> e1 = new ArrayList<Dec>();
-		ArrayList<Statement> e2 = new ArrayList<Statement>();
 		match(LBRACE);
-		while (t.isKind(DEC_F) || t.isKind(STATEMENT_F)){
-			if (t.isKind(DEC_F)) e1.add(dec());
-			else if (t.isKind(STATEMENT_F))  e2.add(statement());
+		while (isKind(DEC_F) || isKind(STATEMENT_F)){
+			if (isKind(DEC_F)) dec();
+			else if (isKind(STATEMENT_F))  statement();
 		}
-		e = new Block(first,e1,e2);
 		match(RBRACE);
-		return e;
+		
 		//throw new UnimplementedFeatureException();
 	}
 
-	Program program() throws SyntaxException {
+	void program() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Program e = null;
-		ArrayList<ParamDec> paramList = new ArrayList<ParamDec>();
-		Block b = null;
 		match(IDENT);
-		if (!t.isKind(LBRACE)) {
-			paramList.add(paramDec());
-			while (t.isKind(COMMA)){
+		if (!isKind(LBRACE)) {
+			paramDec();
+			while (isKind(COMMA)){
 				consume();
-				paramList.add(paramDec());
+				paramDec();
 			}
 		}
-		b = block();
-		e = new Program(first,paramList,b);
-		return e;
+		block();
+		if (!isKind(EOF)) System.out.println("NOT END");
 		//throw new UnimplementedFeatureException();
 	}
 
-	ParamDec paramDec() throws SyntaxException {
+	void paramDec() throws SyntaxException {
 		//TODO
-		Token first = t;
-		ParamDec e = null;
 		Kind kind = t.kind;
 		switch(kind){
 		case KW_URL:
@@ -205,132 +171,100 @@ public class Parser {
 			System.out.println(t.kind);
 			throw new SyntaxException("illegal factor");
 		}
-		if (t.kind == IDENT) e = new ParamDec(first,consume());
+		if (t.kind == IDENT) consume();
 		else throw new SyntaxException("illegal factor");
-		return e;
 		//throw new UnimplementedFeatureException();
 	}
 
-	Dec dec() throws SyntaxException {
+	void dec() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Dec e = null;
 		match(DEC_F);
-		Token e1 = t;
 		match(IDENT);
-		e = new Dec(first,e1);
 		//throw new UnimplementedFeatureException();
-		return e;
 	}
 
-	Statement statement() throws SyntaxException {
+	void statement() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Statement e = null;
 		Kind kind = t.kind;
-		if (t.isKind(OP_SLEEP)){
+		if (isKind(OP_SLEEP)){
 			consume();
-			Expression e1 = expression();
-			e = new SleepStatement(first,e1);
+			expression();
 			match(SEMI);
 		}
-		else if (t.isKind(KW_WHILE)){
+		else if (isKind(KW_WHILE)){
 			match(KW_WHILE);
 			match(LPAREN);
-			Expression e1 = expression();
+			expression();
 			match(RPAREN);
-			Block e2 = block();
-			e = new WhileStatement(first,e1,e2);
+			block();
 		}
-		else if (t.isKind(KW_IF)){
+		else if (isKind(KW_IF)){
 			match(KW_IF);
 			match(LPAREN);
-			Expression e1 = expression();
+			expression();
 			match(RPAREN);
-			Block e2 = block();
-			e = new IfStatement(first,e1,e2);
+			block();
 		}
-		else if (t.isKind(IDENT) && scanner.peek().kind == ASSIGN){
-			IdentLValue e1 = new IdentLValue(first);
-			consume();
-			consume();
-			Expression e2 = expression();
-			match(SEMI);
-			e = new AssignmentStatement(first,e1,e2);
-		}
+		else if (isKind(IDENT) && scanner.peek().kind == ASSIGN){
+				consume();
+				consume();
+				expression();
+				match(SEMI);
+			}
 		else {
-			e = chain();
+			chain();
 			match(SEMI);
 		}
-		return e;
+
 		//throw new UnimplementedFeatureException();
 	}
 
-	Chain chain() throws SyntaxException {
+	void chain() throws SyntaxException {
 		//TODO
-		Token first = t;
-		Chain e1 = chainElem();
-		ChainElem e2 = null;
-		if (t.isKind(ARROW) || t.isKind(BARARROW)) {
-			Token op = consume();
-			e2 = chainElem();
-			e1 = new BinaryChain(first,e1,op,e2);
-			//consume();
-		}
+		chainElem();
+		if (isKind( ARROW)) consume();
+		else if (isKind(BARARROW)) consume();
 		else throw new SyntaxException("SyntaxException");
-		while (t.isKind(ARROW) || t.isKind(BARARROW)){
-			Token op = consume();
-			e2 = chainElem();
-			e1 = new BinaryChain(first,e1,op,e2);
-			//consume();
+		chainElem();
+		while (isKind(ARROW) || isKind(BARARROW)){
+			consume();
+			chainElem();
 		}
-		return e1;
-		//throw new UnimplementedFeatureException();
-	}
-
-	ChainElem chainElem() throws SyntaxException {
-		//TODO
-		Token first = t;
-		ChainElem e = null;
-		if (t.isKind(IDENT)) e = new IdentChain(consume());
-		else if (t.isKind(FILTER_OP)){
-			Token op = consume();
-			Tuple tuple = arg();
-			e = new FilterOpChain(op,tuple);
-		}
-		else if (t.isKind(FRAME_OP)){
-			Token op = consume();
-			Tuple tuple = arg();
-			e = new FrameOpChain(op,tuple);
-		}
-		else if (t.isKind(IMAGE_OP)){
-			Token op = consume();
-			Tuple tuple = arg();
-			e = new ImageOpChain(op,tuple);
-		}
-		else throw new SyntaxException("expected chain element");
-		return e;
 		
 		//throw new UnimplementedFeatureException();
 	}
 
-	Tuple arg() throws SyntaxException {
+	void chainElem() throws SyntaxException {
 		//TODO
-		Token first = t;
-		ArrayList<Expression> expressions = new ArrayList<Expression>();
-		Tuple tuple = null;
-		if (t.isKind(LPAREN)){
+		if (isKind(IDENT)) consume();
+		else if (isKind(FILTER_OP)){
 			consume();
-			expressions.add(expression());
-			while (t.isKind(COMMA)) {
+			arg();
+		}
+		else if (isKind(FRAME_OP)){
+			consume();
+			arg();
+		}
+		else if (isKind(IMAGE_OP)){
+			consume();
+			arg();
+		}
+		
+		//throw new UnimplementedFeatureException();
+	}
+
+	void arg() throws SyntaxException {
+		//TODO
+		if (isKind(LPAREN)){
+			consume();
+			expression();
+			while (isKind(COMMA)) {
 				match(COMMA);
-				expressions.add(expression());
+				expression();
 			}
 			//System.out.println(t.kind);
 			match(RPAREN);
 		}
-		tuple = new Tuple(first,expressions);
-		return tuple;
 		//throw new UnimplementedFeatureException();
 	}
 
@@ -342,7 +276,7 @@ public class Parser {
 	 * @throws SyntaxException
 	 */
 	private Token matchEOF() throws SyntaxException {
-		if (t.isKind(EOF)) {
+		if (isKind(EOF)) {
 			return t;
 		}
 		throw new SyntaxException("expected EOF");
@@ -359,7 +293,7 @@ public class Parser {
 	 * @throws SyntaxException
 	 */
 	private Token match(Kind kind) throws SyntaxException {
-		if (t.isKind(kind)) {
+		if (isKind(kind)) {
 			return consume();
 		}
 		throw new SyntaxException("saw " + t.kind + "expected " + kind);
@@ -379,7 +313,7 @@ public class Parser {
 	 */
 	private Token match(Kind... kinds) throws SyntaxException {
 		// TODO. Optional but handy
-		if (t.isKind(kinds))  return consume();
+		if (isKind(kinds))  return consume();
 		else {
 			throw new SyntaxException("SyntaxException");
 		}
@@ -400,7 +334,16 @@ public class Parser {
 	}
 	
 	
-	
+	private boolean isKind (Kind k){
+		return k==t.kind;
+	}
+	private boolean isKind(Kind... kinds) {
+		// TODO. Optional but handy
+		for (Kind kind:kinds){
+			if (t.kind == kind) return true;
+		}
+		return false;
+	}
 	
 
 }
